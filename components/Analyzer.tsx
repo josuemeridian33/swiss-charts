@@ -1,11 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Analysis, DayTradingAnalysis, Strategy } from "@/lib/schema";
+import type { Analysis, DayTradingAnalysis } from "@/lib/schema";
 import dynamic from "next/dynamic";
 
-// Carga diferida del resultado: saca html-to-image (lib pesada) del JS inicial.
-// El panel de resultado solo se monta tras analizar, así no penaliza la primera carga.
+// Carga diferida de los resultados: saca html-to-image (lib pesada) del JS inicial.
 const AnalysisResult = dynamic(() => import("./AnalysisResult"), {
   ssr: false,
   loading: () => <div className="mt-6 h-44 animate-pulse rounded-xl bg-surface/60" />,
@@ -16,6 +15,10 @@ const DayTradingResult = dynamic(() => import("./DayTradingResult"), {
 });
 
 const HOTMART_URL = process.env.NEXT_PUBLIC_HOTMART_URL || "#";
+const INPUT_CLS =
+  "rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-muted focus:border-sage-bright focus:outline-none";
+
+type Slot = "macro" | "micro";
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -45,57 +48,152 @@ async function fileToDataUrl(file: File, maxDim = 1568, quality = 0.85): Promise
   }
 }
 
+/** Slot de subida para macro o micro. */
+function Dropzone({
+  slot,
+  preview,
+  onFile,
+  onClear,
+}: {
+  slot: Slot;
+  preview: string | null;
+  onFile: (f: File) => void;
+  onClear: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [over, setOver] = useState(false);
+  const isMacro = slot === "macro";
+
+  const handle = (files?: FileList | null) => {
+    const f = files?.[0];
+    if (f) onFile(f);
+  };
+
+  return (
+    <div>
+      <div className="mb-1.5 flex flex-wrap items-center gap-x-2 text-xs">
+        <span className={`font-semibold ${isMacro ? "text-sage-bright" : "text-terracotta-soft"}`}>
+          {isMacro ? "📈 Macro · Código Suizo" : "🔬 Micro · Day Trading"}
+        </span>
+        <span className="text-fg-subtle">
+          {isMacro ? "Diaria / semanal / mensual" : "Intradía / scalping · 15m, 1H…"}
+        </span>
+      </div>
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setOver(true);
+        }}
+        onDragLeave={() => setOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setOver(false);
+          handle(e.dataTransfer.files);
+        }}
+        onClick={() => inputRef.current?.click()}
+        className={`relative cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed p-4 text-center transition ${
+          over
+            ? "border-sage-bright bg-sage-bright/10"
+            : "border-line bg-surface/40 hover:border-sage/60"
+        }`}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => handle(e.target.files)}
+        />
+        {preview ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={preview}
+            alt={`Gráfico ${slot}`}
+            className="mx-auto max-h-64 rounded-lg border border-line"
+          />
+        ) : (
+          <div className="py-6">
+            <div className="text-3xl">{isMacro ? "📈" : "🔬"}</div>
+            <p className="mt-2 text-sm font-medium text-fg">
+              Sube tu gráfico {slot === "macro" ? "macro" : "micro"}
+            </p>
+            <p className="mt-1 text-xs text-fg-muted">
+              {isMacro ? "Diaria / semanal / mensual" : "Intradía / scalping · 15m, 1H…"}
+            </p>
+          </div>
+        )}
+      </div>
+      {preview && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onClear();
+          }}
+          className="mt-1.5 text-xs text-fg-muted hover:text-sell"
+        >
+          Quitar imagen {slot}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function Analyzer() {
-  const [preview, setPreview] = useState<string | null>(null);
-  const [strategy, setStrategy] = useState<Strategy>("codigo_suizo");
+  const [macroPreview, setMacroPreview] = useState<string | null>(null);
+  const [microPreview, setMicroPreview] = useState<string | null>(null);
   const [asset, setAsset] = useState("");
-  const [timeframe, setTimeframe] = useState("");
   const [bias, setBias] = useState("");
   const [showOptions, setShowOptions] = useState(false);
 
   const [loading, setLoading] = useState(false);
-  const [analysis, setAnalysis] = useState<Analysis | DayTradingAnalysis | null>(null);
+  const [result, setResult] = useState<{
+    suizo: Analysis;
+    daytrading: DayTradingAnalysis;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [paywall, setPaywall] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
-  const [dragOver, setDragOver] = useState(false);
 
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleFile = useCallback(async (file: File) => {
+  const handleFile = useCallback(async (file: File, slot: Slot) => {
     if (!file.type.startsWith("image/")) {
       setError("Sube una imagen (captura de tu gráfico).");
       return;
     }
     setError(null);
-    setAnalysis(null);
+    setResult(null);
     const dataUrl = await fileToDataUrl(file);
-    setPreview(dataUrl);
+    if (slot === "macro") setMacroPreview(dataUrl);
+    else setMicroPreview(dataUrl);
   }, []);
 
-  // Pegar con Ctrl+V
+  // Pegar con Ctrl+V → va al primer slot vacío.
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
       const item = Array.from(e.clipboardData?.items ?? []).find((i) =>
         i.type.startsWith("image/")
       );
       const file = item?.getAsFile();
-      if (file) handleFile(file);
+      if (file) handleFile(file, !macroPreview ? "macro" : "micro");
     };
     window.addEventListener("paste", onPaste);
     return () => window.removeEventListener("paste", onPaste);
-  }, [handleFile]);
+  }, [handleFile, macroPreview]);
 
   async function analyze() {
-    if (!preview) return;
+    if (!macroPreview || !microPreview) return;
     setLoading(true);
     setError(null);
-    setAnalysis(null);
+    setResult(null);
     try {
-      const res = await fetch("/api/analyze", {
+      const res = await fetch("/api/analyze-both", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: preview, strategy, asset, timeframe, bias }),
+        body: JSON.stringify({
+          macro: macroPreview,
+          micro: microPreview,
+          asset,
+          bias,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -106,7 +204,7 @@ export default function Analyzer() {
         }
         return;
       }
-      setAnalysis(data.analysis);
+      setResult({ suizo: data.suizo, daytrading: data.daytrading });
       setRemaining(typeof data.remaining === "number" ? data.remaining : null);
     } catch {
       setError("Error de conexión. Intenta de nuevo.");
@@ -117,101 +215,34 @@ export default function Analyzer() {
 
   return (
     <div className="w-full">
-      {/* Selector de modo */}
-      <div className="mb-3 grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface/40 p-1">
-        {(
-          [
-            { k: "codigo_suizo", label: "Código Suizo", sub: "Macro · D / W / M" },
-            { k: "daytrading", label: "Day Trading", sub: "Micro · SMC · ICT · Scalping" },
-          ] as const
-        ).map((o) => (
-          <button
-            key={o.k}
-            type="button"
-            onClick={() => {
-              setStrategy(o.k);
-              setAnalysis(null);
-              setError(null);
-            }}
-            className={`rounded-lg px-3 py-2 text-center transition ${
-              strategy === o.k
-                ? "bg-sage-bright/15 text-sage-light"
-                : "text-fg-muted hover:text-fg"
-            }`}
-          >
-            <div className="text-sm font-semibold leading-tight">{o.label}</div>
-            <div className="mt-0.5 text-[10px] text-fg-subtle">{o.sub}</div>
-          </button>
-        ))}
-      </div>
+      <p className="mb-2 text-xs text-fg-muted">
+        Sube tu gráfico en <span className="text-sage-bright">macro</span> y en{" "}
+        <span className="text-terracotta-soft">micro</span>. Se analizan los dos a la vez
+        (Código Suizo + SMC/ICT).
+        <span className="hidden sm:inline"> Puedes pegar con Ctrl+V.</span>
+      </p>
 
-      {/* Dropzone */}
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragOver(false);
-          const file = e.dataTransfer.files?.[0];
-          if (file) handleFile(file);
-        }}
-        onClick={() => inputRef.current?.click()}
-        className={`relative cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed p-6 text-center transition ${
-          dragOver
-            ? "border-sage-bright bg-sage-bright/10"
-            : "border-line bg-surface/40 hover:border-sage/60"
-        }`}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleFile(file);
+      {/* Doble subida */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Dropzone
+          slot="macro"
+          preview={macroPreview}
+          onFile={(f) => handleFile(f, "macro")}
+          onClear={() => {
+            setMacroPreview(null);
+            setResult(null);
           }}
         />
-        {preview ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={preview}
-            alt="Gráfico"
-            className="mx-auto max-h-80 rounded-lg border border-line"
-          />
-        ) : (
-          <div className="py-8">
-            <div className="text-4xl">📸</div>
-            <p className="mt-3 font-medium text-fg">
-              Arrastra tu gráfico o haz clic
-              <span className="hidden sm:inline">
-                {" "}
-                o pega con{" "}
-                <kbd className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-xs">Ctrl+V</kbd>
-              </span>
-            </p>
-            <p className="mt-1 text-sm text-fg-muted">
-              Captura de tu gráfico en temporalidad alta (diaria, semanal, mensual)
-            </p>
-          </div>
-        )}
-      </div>
-
-      {preview && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setPreview(null);
-            setAnalysis(null);
+        <Dropzone
+          slot="micro"
+          preview={microPreview}
+          onFile={(f) => handleFile(f, "micro")}
+          onClear={() => {
+            setMicroPreview(null);
+            setResult(null);
           }}
-          className="mt-2 text-xs text-fg-muted hover:text-sell"
-        >
-          Quitar imagen
-        </button>
-      )}
+        />
+      </div>
 
       {/* Opciones */}
       <div className="mt-3">
@@ -219,27 +250,21 @@ export default function Analyzer() {
           onClick={() => setShowOptions((s) => !s)}
           className="text-xs text-sage-muted hover:text-sage-light"
         >
-          {showOptions ? "− Ocultar" : "+ Datos opcionales"} (activo, temporalidad)
+          {showOptions ? "− Ocultar" : "+ Datos opcionales"} (activo, sesgo)
         </button>
         {showOptions && (
-          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
             <input
               value={asset}
               onChange={(e) => setAsset(e.target.value)}
               placeholder="Activo (ej. XAUUSD)"
-              className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-muted focus:border-sage-bright focus:outline-none"
-            />
-            <input
-              value={timeframe}
-              onChange={(e) => setTimeframe(e.target.value)}
-              placeholder="Temporalidad (ej. 1D)"
-              className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-muted focus:border-sage-bright focus:outline-none"
+              className={INPUT_CLS}
             />
             <input
               value={bias}
               onChange={(e) => setBias(e.target.value)}
               placeholder="Tu sesgo (opcional)"
-              className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-muted focus:border-sage-bright focus:outline-none"
+              className={INPUT_CLS}
             />
           </div>
         )}
@@ -248,10 +273,10 @@ export default function Analyzer() {
       {/* Botón analizar */}
       <button
         onClick={analyze}
-        disabled={!preview || loading}
+        disabled={!macroPreview || !microPreview || loading}
         className="mt-4 w-full rounded-xl bg-sage-bright px-6 py-3.5 text-base font-semibold text-ink-deep transition hover:bg-sage-light disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {loading ? "Analizando tu gráfico…" : "Analizar gráfico"}
+        {loading ? "Analizando macro y micro…" : "Analizar ambos gráficos"}
       </button>
 
       {remaining !== null && (
@@ -269,28 +294,37 @@ export default function Analyzer() {
       {loading && (
         <div className="mt-6 animate-pulse space-y-3">
           <div className="h-24 rounded-xl bg-surface/60" />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="h-20 rounded-xl bg-surface/60" />
-            <div className="h-20 rounded-xl bg-surface/60" />
+          <div className="h-24 rounded-xl bg-surface/60" />
+        </div>
+      )}
+
+      {result && !loading && (
+        <div className="mt-6 space-y-8">
+          <div>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-sage-muted">
+              📈 Código Suizo · macro
+            </div>
+            <AnalysisResult analysis={result.suizo} />
+          </div>
+          <div>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-sage-muted">
+              🔬 Day Trading / Scalping · micro
+            </div>
+            <DayTradingResult analysis={result.daytrading} />
           </div>
         </div>
       )}
 
-      {analysis && !loading && (
-        <div className="mt-6">
-          {strategy === "daytrading" ? (
-            <DayTradingResult analysis={analysis as DayTradingAnalysis} />
-          ) : (
-            <AnalysisResult analysis={analysis as Analysis} />
-          )}
-        </div>
+      {paywall && (
+        <Paywall
+          onClose={() => setPaywall(false)}
+          onRedeemed={(r) => {
+            setPaywall(false);
+            setRemaining(r);
+            setError(null);
+          }}
+        />
       )}
-
-      {paywall && <Paywall onClose={() => setPaywall(false)} onRedeemed={(r) => {
-        setPaywall(false);
-        setRemaining(r);
-        setError(null);
-      }} />}
     </div>
   );
 }

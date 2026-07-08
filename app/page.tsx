@@ -1,11 +1,11 @@
 import Analyzer from "@/components/Analyzer";
 
-const MODES = [
+const VIEWS = [
   {
-    tag: "Código Suizo",
-    title: "Operar en MACRO",
+    tag: "Macro · Código Suizo",
+    title: "El panorama grande",
     accent: "text-sage-bright",
-    desc: "Temporalidades altas: diaria, semanal y mensual. Buscamos zonas de altísima probabilidad donde coinciden varios factores, para entrar con stop corto y beneficio grande. Pocas operaciones, mucha paciencia.",
+    desc: "Diaria, semanal y mensual. Zonas de altísima probabilidad donde coinciden varios factores, para entrar con stop corto y beneficio grande.",
     checks: [
       "Estructura y rompimiento (BOS)",
       "Order block de origen",
@@ -16,10 +16,10 @@ const MODES = [
     ],
   },
   {
-    tag: "Day Trading / Scalping",
-    title: "Operar en MICRO",
+    tag: "Micro · Day Trading",
+    title: "La entrada precisa",
     accent: "text-terracotta-soft",
-    desc: "Temporalidades bajas (intradía y scalping). Leemos tu gráfico con 3 lentes y te damos un % en cada uno, más un plan conjunto. Pensado para entrar y salir en la sesión.",
+    desc: "Intradía y scalping. Leemos tu gráfico con 3 lentes y te damos un % en cada uno, más un plan conjunto para operar en la sesión.",
     checks: [
       "SMC: order blocks y liquidez",
       "ICT: FVG y sus variantes",
@@ -34,18 +34,18 @@ const MODES = [
 const STEPS = [
   {
     n: "1",
-    t: "Sube tu gráfico",
-    d: "Captura tu chart y súbelo. Funciona en cualquier activo y temporalidad.",
+    t: "Sube macro + micro",
+    d: "Sube la captura de tu chart en temporalidad alta y en temporalidad baja.",
   },
   {
     n: "2",
-    t: "Elige cómo operas",
-    d: "Código Suizo (macro) o Day Trading / Scalping con SMC + ICT (micro).",
+    t: "La IA lee ambos",
+    d: "Código Suizo sobre el macro y SMC + ICT sobre el micro, en paralelo.",
   },
   {
     n: "3",
-    t: "Recibe tu plan",
-    d: "Veredicto, zonas, entrada, stop, take profit y qué hacer ahora.",
+    t: "Recibe tus 2 planes",
+    d: "Veredicto, zonas, entrada, stop y take profit para cada vista.",
   },
 ];
 
@@ -63,13 +63,13 @@ export default function Home() {
           <span className="text-sage-bright">un profesional</span>
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-fg-muted">
-          Sube la captura de tu chart y recibe en segundos un análisis técnico
-          completo. Tú eliges: <span className="text-fg">Código Suizo</span> en
-          macro, o <span className="text-fg">Day Trading / Scalping</span> con
-          SMC + ICT en micro. Sin conectar tu cuenta.
+          Sube tu chart en <span className="text-fg">macro y en micro</span> y
+          recibe en segundos <span className="text-fg">dos análisis a la vez</span>:
+          Código Suizo para el panorama grande y SMC + ICT para la entrada.
+          Sin conectar tu cuenta.
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-fg-muted">
-          <span>✓ 2 análisis gratis</span>
+          <span>✓ Macro + micro en paralelo</span>
           <span>✓ Oro, BTC, NASDAQ, US30, forex</span>
           <span>✓ % por metodología</span>
         </div>
@@ -80,13 +80,13 @@ export default function Home() {
         <Analyzer />
       </section>
 
-      {/* Dos formas de operar */}
+      {/* Las dos vistas (siempre se analizan ambas) */}
       <section className="mt-14">
         <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-sage-muted">
-          Dos formas de operar
+          Cada análisis incluye las dos vistas
         </h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {MODES.map((m) => (
+          {VIEWS.map((m) => (
             <div
               key={m.tag}
               className="rounded-xl border border-line bg-surface/50 p-5"
@@ -125,9 +125,10 @@ export default function Home() {
             <span className="text-sage-light">zona de alta probabilidad</span>.
           </p>
           <p className="mt-2 text-sm text-fg-muted">
-            Si recién empiezas, prueba primero el modo{" "}
-            <span className="text-fg">Day Trading / Scalping</span> (más
-            familiar) y usa Código Suizo para ver el panorama grande.
+            Por eso cada análisis trae ambas vistas: Código Suizo te muestra el{" "}
+            <span className="text-fg">panorama grande</span> y Day Trading/Scalping
+            (SMC + ICT) te da la{" "}
+            <span className="text-fg">entrada precisa</span> en temporalidad baja.
           </p>
         </div>
       </section>
@@ -148,12 +149,6 @@ export default function Home() {
             </div>
           ))}
         </div>
-        <p className="mt-4 rounded-lg border border-line bg-surface/40 px-4 py-3 text-center text-sm text-fg-muted">
-          💡 <span className="text-fg">Recomendación:</span> analiza en{" "}
-          <span className="text-sage-light">macro</span> (Código Suizo){" "}
-          <span className="text-fg">y en micro</span> (Day Trading) para ver el
-          panorama completo. Si solo quieres micro, también puedes.
-        </p>
       </section>
 
       {/* Precio */}
@@ -165,8 +160,8 @@ export default function Home() {
           <div className="mt-2 text-5xl font-bold text-fg">$10</div>
           <div className="mt-1 text-sm text-fg-muted">50 análisis · sin suscripción</div>
           <ul className="mt-4 space-y-1.5 text-left text-sm text-fg/90">
-            <li>✓ Análisis ilimitados hasta agotar tus 50</li>
-            <li>✓ Descarga y comparte cada análisis</li>
+            <li>✓ Cada análisis incluye macro + micro</li>
+            <li>✓ Descarga y comparte cada resultado</li>
             <li>✓ Sin mensualidad, sin tarjeta guardada</li>
           </ul>
           <p className="mt-4 text-xs text-fg-muted">
