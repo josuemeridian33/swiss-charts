@@ -14,7 +14,7 @@ import {
   toneClasses,
 } from "@/lib/labels";
 
-function Badge({ children, tone }: { children: React.ReactNode; tone: keyof typeof toneClasses }) {
+export function Badge({ children, tone }: { children: React.ReactNode; tone: keyof typeof toneClasses }) {
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${toneClasses[tone]}`}
@@ -24,7 +24,7 @@ function Badge({ children, tone }: { children: React.ReactNode; tone: keyof type
   );
 }
 
-function ScoreRing({ score }: { score: number }) {
+export function ScoreRing({ score }: { score: number }) {
   const r = 34;
   const c = 2 * Math.PI * r;
   const dash = (score / 100) * c;
@@ -54,7 +54,7 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
-function Card({
+export function Card({
   title,
   active = true,
   children,

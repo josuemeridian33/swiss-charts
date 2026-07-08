@@ -100,3 +100,134 @@ export const analysisSchema = z.object({
 });
 
 export type Analysis = z.infer<typeof analysisSchema>;
+
+/**
+ * Modo de análisis elegido por el usuario.
+ * - codigo_suizo: temporalidades ALTAS (diaria/semanal/mensual)
+ * - daytrading: temporalidades bajas (intradía/scalping) — lentes SMC + ICT + Scalping
+ */
+export type Strategy = "codigo_suizo" | "daytrading";
+
+/**
+ * Esquema del análisis "Day Trading / Scalping".
+ * Estructura de 3 lentes (SMC, ICT, Scalping) con % cada uno + plan conjunto.
+ * Cubre a fondo SMC concepts e ICT.
+ */
+export const dayTradingSchema = z.object({
+  // Contexto
+  asset: z.string().describe("Activo detectado, ej. 'XAUUSD','NAS100','BTCUSD'. Si no se distingue: 'No identificado'."),
+  timeframe: z
+    .string()
+    .describe("Temporalidad visible (intradía/scalping), ej. '15m','5m','1H','4H'. Si no se distingue: 'No identificada'."),
+  session: z
+    .enum(["asiatica", "londres", "nueva_york", "mixta", "no_clara"])
+    .describe("Sesión de trading inferida del gráfico o la hora."),
+
+  bias: z.enum(["alcista", "bajista", "rango", "indefinido"]),
+
+  // Base estructural (común a SMC/ICT)
+  structure: z.object({
+    type: z
+      .enum([
+        "bos_alcista",
+        "bos_bajista",
+        "choch_alcista",
+        "choch_bajista",
+        "rango",
+        "sin_estructura",
+      ])
+      .describe("Tipo de estructura de mercado visible: BOS/CHoCH/MSS, rango o nada claro."),
+    note: z.string().describe("Explica brevemente el estado de la estructura."),
+  }),
+
+  // Dealing range / premium-discount
+  dealingRange: z.object({
+    high: z.string().describe("Techo del dealing range actual."),
+    low: z.string().describe("Suelo del dealing range actual."),
+    equilibrium: z.string().describe("50% / equilibrio del rango."),
+    currentZone: z
+      .enum(["premium", "descuento", "equilibrio"])
+      .describe("Dónde está el precio respecto al dealing range."),
+  }),
+
+  // LENTE 1 — SMC concepts
+  smc: z.object({
+    score: z.number().min(0).max(100).describe("Calidad del setup desde la lente SMC concepts (0-100)."),
+    orderBlocks: z.object({
+      found: z.boolean(),
+      type: z
+        .enum(["bullish", "bearish", "breaker", "mitigation_block"])
+        .describe("Tipo de order block más relevante."),
+      location: z.string().describe("Nivel/ubicación del order block."),
+      note: z.string(),
+    }),
+    liquidity: z.object({
+      buyside: z.string().describe("Zona de liquidez buyside (stops por encima / máximos relevantes)."),
+      sellside: z.string().describe("Zona de liquidez sellside (stops por debajo / mínimos relevantes)."),
+      sweep: z.boolean().describe("¿Hubo barrido/cacería de liquidez (liquidity sweep / grab)?"),
+      sweepNote: z.string(),
+    }),
+    imbalance: z.object({
+      found: z.boolean(),
+      zone: z.string().describe("Zona del fair value gap / imbalance."),
+      note: z.string(),
+    }),
+    note: z.string().describe("Resumen SMC en una frase corta."),
+  }),
+
+  // LENTE 2 — ICT
+  ict: z.object({
+    score: z.number().min(0).max(100).describe("Calidad del setup desde la lente ICT (0-100)."),
+    fvg: z.object({
+      found: z.boolean(),
+      variant: z
+        .enum(["breakaway", "displacement_runaway", "exhaustion"])
+        .describe("Variante del fair value gap."),
+      zone: z.string(),
+      note: z.string(),
+    }),
+    liquidityGrab: z.object({
+      found: z.boolean().describe("¿Se tomó liquidez (stop hunt) antes del movimiento direccional?"),
+      note: z.string(),
+    }),
+    killzone: z.object({
+      relevant: z.boolean().describe("¿El movimiento ocurre dentro de una killzone ICT relevante?"),
+      which: z.string().describe("Killzone: 'Asiática', 'Londres', 'Nueva York' o 'N/A'."),
+      note: z.string(),
+    }),
+    note: z.string().describe("Resumen ICT en una frase corta."),
+  }),
+
+  // LENTE 3 — Scalping / Intradía
+  scalping: z.object({
+    score: z.number().min(0).max(100).describe("Calidad del setup para scalping/intradía (0-100)."),
+    entryTrigger: z
+      .string()
+      .describe("Disparador de entrada en TF menor (1m/5m), ej. 'cierre de vela de rechazo sobre el OB'."),
+    momentum: z.string().describe("Condición de momento/precio que confirma la entrada."),
+    note: z.string().describe("Resumen scalping en una frase corta."),
+  }),
+
+  // Síntesis
+  confluenceNote: z.string().describe("Dónde coinciden los 3 lentes (SMC/ICT/scalping). Si no coinciden, dilo."),
+  setupScore: z.number().min(0).max(100).describe("Score global blended del setup (0-100)."),
+  action: z.enum(["buscar_entrada", "poner_alerta", "esperar", "evitar"]),
+  actionExplanation: z.string(),
+
+  // Plan conjunto
+  tradePlan: z.object({
+    direction: z.enum(["compra", "venta", "ninguna"]),
+    entryZone: z.string(),
+    stopLoss: z.string(),
+    takeProfit: z.string(),
+    riskReward: z.string().describe("Ratio estimado, ej. '1:3'. En scalping se busca ~1:2 a 1:5."),
+  }),
+
+  sessionTip: z.string().describe("Recordatorio de sesión/killzone para operar."),
+  newsReminder: z.string().describe("Recordatorio de revisar noticias de alto impacto antes de operar."),
+
+  verdict: z.string().describe("Veredicto en una frase corta y directa."),
+  confidence: z.enum(["alta", "media", "baja"]),
+});
+
+export type DayTradingAnalysis = z.infer<typeof dayTradingSchema>;

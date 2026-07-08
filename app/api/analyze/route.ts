@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import { analysisSchema } from "@/lib/schema";
-import { SYSTEM_PROMPT, USER_INSTRUCTION } from "@/lib/prompt";
+import { analysisSchema, dayTradingSchema, type Strategy } from "@/lib/schema";
+import { getStrategySystem, USER_INSTRUCTION } from "@/lib/prompt";
 import {
   FREE_LIMIT,
   FREE_COOKIE,
@@ -30,6 +30,8 @@ export async function POST(req: NextRequest) {
     const asset: string | undefined = body?.asset;
     const timeframe: string | undefined = body?.timeframe;
     const bias: string | undefined = body?.bias;
+    const strategy: Strategy =
+      body?.strategy === "daytrading" ? "daytrading" : "codigo_suizo";
 
     if (typeof image !== "string" || !image.startsWith("data:image")) {
       return NextResponse.json({ error: "Imagen inválida." }, { status: 400 });
@@ -75,14 +77,14 @@ export async function POST(req: NextRequest) {
 
     const { object } = await generateObject({
       model: anthropic("claude-sonnet-5"),
-      schema: analysisSchema,
+      schema: strategy === "daytrading" ? dayTradingSchema : analysisSchema,
       maxOutputTokens: 4000,
-      system: SYSTEM_PROMPT,
+      system: getStrategySystem(strategy),
       messages: [
         {
           role: "user",
           content: [
-            { type: "text", text: USER_INSTRUCTION({ asset, timeframe, bias }) },
+            { type: "text", text: USER_INSTRUCTION({ asset, timeframe, bias }, strategy) },
             { type: "file", data: image, mediaType },
           ],
         },

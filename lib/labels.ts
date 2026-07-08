@@ -1,4 +1,5 @@
 import type { Analysis } from "./schema";
+import type { DayTradingAnalysis } from "./schema";
 
 type Tone = "buy" | "sell" | "sage" | "muted" | "warn";
 
@@ -66,3 +67,56 @@ export function scoreColor(score: number): string {
   if (score >= 45) return "#f0980b"; // warn
   return "#ef4533"; // sell
 }
+
+// ---------- Day Trading / Scalping ----------
+
+export const sessionMeta: Record<
+  DayTradingAnalysis["session"],
+  { label: string; tone: Tone }
+> = {
+  asiatica: { label: "Sesión asiática", tone: "muted" },
+  londres: { label: "Sesión Londres", tone: "sage" },
+  nueva_york: { label: "Sesión Nueva York", tone: "buy" },
+  mixta: { label: "Sesión mixta", tone: "sage" },
+  no_clara: { label: "Sesión no clara", tone: "muted" },
+};
+
+export const dtStructureMeta: Record<
+  DayTradingAnalysis["structure"]["type"],
+  { label: string; tone: Tone }
+> = {
+  bos_alcista: { label: "BOS alcista", tone: "buy" },
+  bos_bajista: { label: "BOS bajista", tone: "sell" },
+  choch_alcista: { label: "CHoCH alcista", tone: "buy" },
+  choch_bajista: { label: "CHoCH bajista", tone: "sell" },
+  rango: { label: "En rango", tone: "muted" },
+  sin_estructura: { label: "Sin estructura clara", tone: "muted" },
+};
+
+export const dealingZoneMeta: Record<
+  DayTradingAnalysis["dealingRange"]["currentZone"],
+  { label: string; tone: Tone }
+> = {
+  premium: { label: "Premium", tone: "sell" },
+  descuento: { label: "Descuento", tone: "buy" },
+  equilibrio: { label: "Equilibrio", tone: "sage" },
+};
+
+export const orderBlockTypeMeta: Record<
+  DayTradingAnalysis["smc"]["orderBlocks"]["type"],
+  { label: string; tone: Tone }
+> = {
+  bullish: { label: "OB bullish", tone: "buy" },
+  bearish: { label: "OB bearish", tone: "sell" },
+  breaker: { label: "Breaker block", tone: "warn" },
+  mitigation_block: { label: "Mitigation block", tone: "sage" },
+};
+
+export const fvgVariantMeta: Record<
+  DayTradingAnalysis["ict"]["fvg"]["variant"],
+  { label: string; tone: Tone }
+> = {
+  breakaway: { label: "Breakaway FVG", tone: "sage" },
+  displacement_runaway: { label: "Displacement / Runaway", tone: "buy" },
+  exhaustion: { label: "Exhaustion FVG", tone: "warn" },
+};

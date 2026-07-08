@@ -1,12 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Analysis } from "@/lib/schema";
+import type { Analysis, DayTradingAnalysis, Strategy } from "@/lib/schema";
 import dynamic from "next/dynamic";
 
 // Carga diferida del resultado: saca html-to-image (lib pesada) del JS inicial.
 // El panel de resultado solo se monta tras analizar, así no penaliza la primera carga.
 const AnalysisResult = dynamic(() => import("./AnalysisResult"), {
+  ssr: false,
+  loading: () => <div className="mt-6 h-44 animate-pulse rounded-xl bg-surface/60" />,
+});
+const DayTradingResult = dynamic(() => import("./DayTradingResult"), {
   ssr: false,
   loading: () => <div className="mt-6 h-44 animate-pulse rounded-xl bg-surface/60" />,
 });
@@ -43,13 +47,14 @@ async function fileToDataUrl(file: File, maxDim = 1568, quality = 0.85): Promise
 
 export default function Analyzer() {
   const [preview, setPreview] = useState<string | null>(null);
+  const [strategy, setStrategy] = useState<Strategy>("codigo_suizo");
   const [asset, setAsset] = useState("");
   const [timeframe, setTimeframe] = useState("");
   const [bias, setBias] = useState("");
   const [showOptions, setShowOptions] = useState(false);
 
   const [loading, setLoading] = useState(false);
-  const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [analysis, setAnalysis] = useState<Analysis | DayTradingAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [paywall, setPaywall] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
@@ -90,7 +95,7 @@ export default function Analyzer() {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: preview, asset, timeframe, bias }),
+        body: JSON.stringify({ image: preview, strategy, asset, timeframe, bias }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -112,6 +117,34 @@ export default function Analyzer() {
 
   return (
     <div className="w-full">
+      {/* Selector de modo */}
+      <div className="mb-3 grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface/40 p-1">
+        {(
+          [
+            { k: "codigo_suizo", label: "Código Suizo", sub: "Macro · D / W / M" },
+            { k: "daytrading", label: "Day Trading", sub: "Micro · SMC · ICT · Scalping" },
+          ] as const
+        ).map((o) => (
+          <button
+            key={o.k}
+            type="button"
+            onClick={() => {
+              setStrategy(o.k);
+              setAnalysis(null);
+              setError(null);
+            }}
+            className={`rounded-lg px-3 py-2 text-center transition ${
+              strategy === o.k
+                ? "bg-sage-bright/15 text-sage-light"
+                : "text-fg-muted hover:text-fg"
+            }`}
+          >
+            <div className="text-sm font-semibold leading-tight">{o.label}</div>
+            <div className="mt-0.5 text-[10px] text-fg-subtle">{o.sub}</div>
+          </button>
+        ))}
+      </div>
+
       {/* Dropzone */}
       <div
         onDragOver={(e) => {
@@ -245,7 +278,11 @@ export default function Analyzer() {
 
       {analysis && !loading && (
         <div className="mt-6">
-          <AnalysisResult analysis={analysis} />
+          {strategy === "daytrading" ? (
+            <DayTradingResult analysis={analysis as DayTradingAnalysis} />
+          ) : (
+            <AnalysisResult analysis={analysis as Analysis} />
+          )}
         </div>
       )}
 
