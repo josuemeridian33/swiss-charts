@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🇨🇭 Swiss Charts
 
-## Getting Started
+Analizador de gráficos con IA basado en la metodología **El Código Suizo**.
+El usuario sube una captura de su chart → Claude Vision devuelve estructura,
+order block de origen, 50% de la vela de rompimiento, Fib 78.6%, imbalance,
+zona de confluencia y plan de entrada.
 
-First, run the development server:
+- **Framework:** Next.js 16 + React 19 + Tailwind v4
+- **IA:** Claude Sonnet 5 (visión) vía Vercel AI SDK (`generateObject`)
+- **Licencias/pagos:** Supabase + Hotmart (pago único $10 = 50 análisis)
+- **Costo:** ~$0.02 por análisis, sin costos fijos mensuales
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Puesta en marcha (local)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Copia `.env.example` a `.env.local` y pon al menos `ANTHROPIC_API_KEY`.
+2. `npm install`
+3. `npm run dev` → http://localhost:3006
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Sin Supabase configurado, la app funciona en **modo demo** (2 análisis gratis
+por navegador). El sistema de licencias se activa al poner las variables de Supabase.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Activar pagos (Hotmart + Supabase)
 
-## Learn More
+1. **Supabase:** crea un proyecto y ejecuta `docs/supabase.sql` en el SQL Editor.
+   Copia `SUPABASE_URL` y la `service_role key` al `.env.local`.
+2. **Hotmart:** crea el producto de $10. En *Herramientas → Webhook (Postback)*
+   apunta a `https://TU-DOMINIO/api/hotmart` y copia el `HOTTOK` a `HOTMART_HOTTOK`.
+3. Pon la URL de checkout en `NEXT_PUBLIC_HOTMART_URL`.
+4. Al comprar, Hotmart llama al webhook → se crea una licencia de 50 usos.
+   El comprador la activa con su **código** o el **email de compra** en el muro de pago.
 
-To learn more about Next.js, take a look at the following resources:
+## Flujo de acceso
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `GET /` → landing + analizador
+- `POST /api/analyze` → valida usos (licencia o gratis) y analiza la imagen
+- `POST /api/redeem` → activa una licencia por código o email (setea cookie)
+- `POST /api/hotmart` → webhook que crea licencias al comprar
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Dónde editar la estrategia
 
-## Deploy on Vercel
+Todo el conocimiento de trading vive en **`lib/prompt.ts`**. Editar ese texto
+cambia cómo analiza la IA. El formato de salida se define en `lib/schema.ts`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deploy
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`vercel` (o conecta el repo). Pon las mismas variables de entorno en el dashboard
+de Vercel. Las rutas ya usan Node.js runtime.
+
+---
+Herramienta educativa de análisis técnico. No es asesoría financiera.

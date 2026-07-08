@@ -1,65 +1,124 @@
-import Image from "next/image";
+import Analyzer from "@/components/Analyzer";
+
+const STEPS = [
+  {
+    n: "1",
+    t: "Sube tu gráfico",
+    d: "Captura tu chart en temporalidad alta (diaria, semanal o mensual) y súbela.",
+  },
+  {
+    n: "2",
+    t: "La IA lo lee",
+    d: "Detecta estructura, order block de origen, la vela de rompimiento, Fib 78.6% e imbalance.",
+  },
+  {
+    n: "3",
+    t: "Recibe tu plan",
+    d: "Zona operativa, entrada, stop, take profit y qué hacer: entrar, alertar o esperar.",
+  },
+];
+
+const CHECKS = [
+  "Estructura y rompimiento (BOS)",
+  "Order block de origen",
+  "50% de la vela de rompimiento",
+  "Fibonacci 78.6%",
+  "Imbalance / FVG",
+  "Zona de confluencia",
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:py-14">
+      {/* Hero */}
+      <header className="text-center">
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-line-strong bg-surface/60 px-3 py-1 text-xs text-sage-muted">
+          <span className="h-1.5 w-1.5 rounded-full bg-terracotta" />
+          Metodología El Código Suizo
+        </div>
+        <h1 className="text-3xl font-bold leading-tight text-fg sm:text-4xl">
+          Analiza tu gráfico como{" "}
+          <span className="text-sage-bright">El Código Suizo</span>
+        </h1>
+        <p className="mx-auto mt-3 max-w-xl text-fg-muted">
+          Sube la captura de tu gráfico y recibe en segundos un análisis técnico
+          completo: zonas operativas, plan de entrada y qué hacer. Sin conectar tu
+          cuenta.
+        </p>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-fg-muted">
+          <span>✓ 2 análisis gratis</span>
+          <span>✓ Oro, BTC, NASDAQ, US30, tech</span>
+          <span>✓ Temporalidades altas</span>
+        </div>
+      </header>
+
+      {/* Analizador */}
+      <section className="mt-10">
+        <Analyzer />
+      </section>
+
+      {/* Qué detecta */}
+      <section className="mt-14">
+        <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-sage-muted">
+          Qué detecta en tu gráfico
+        </h2>
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {CHECKS.map((c) => (
+            <div
+              key={c}
+              className="rounded-lg border border-line bg-surface/50 px-3 py-2.5 text-sm text-fg/90"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+              <span className="text-sage-bright">✓</span> {c}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Cómo funciona */}
+      <section className="mt-14">
+        <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-sage-muted">
+          Cómo funciona
+        </h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {STEPS.map((s) => (
+            <div key={s.n} className="rounded-xl border border-line bg-surface/50 p-4">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sage-bright/15 font-mono text-sm font-bold text-sage-bright">
+                {s.n}
+              </div>
+              <div className="mt-3 font-semibold text-fg">{s.t}</div>
+              <p className="mt-1 text-sm text-fg-muted">{s.d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Precio */}
+      <section className="mt-14">
+        <div className="mx-auto max-w-sm rounded-2xl border border-sage-bright/30 bg-gradient-to-b from-sage-bright/10 to-transparent p-6 text-center">
+          <div className="text-sm font-medium uppercase tracking-wider text-sage-muted">
+            Pago único
+          </div>
+          <div className="mt-2 text-5xl font-bold text-fg">$10</div>
+          <div className="mt-1 text-sm text-fg-muted">50 análisis · sin suscripción</div>
+          <ul className="mt-4 space-y-1.5 text-left text-sm text-fg/90">
+            <li>✓ Análisis ilimitados hasta agotar tus 50</li>
+            <li>✓ Descarga y comparte cada análisis</li>
+            <li>✓ Sin mensualidad, sin tarjeta guardada</li>
+          </ul>
+          <p className="mt-4 text-xs text-fg-muted">
+            Empieza con 2 análisis gratis arriba ↑
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="mt-14 border-t border-line pt-6 text-center text-xs text-fg-muted">
+        <p>
+          Swiss Charts es una herramienta educativa de análisis técnico. No es
+          asesoría financiera ni garantiza resultados. Opera bajo tu propio riesgo.
+        </p>
+        <p className="mt-2">🇨🇭 Swiss Charts · Metodología El Código Suizo</p>
+      </footer>
+    </main>
   );
 }
