@@ -88,6 +88,15 @@ export const analysisSchema = z.object({
     riskReward: z.string().describe("Ratio estimado, ej. '1:10'. La estrategia busca mínimo 1:10."),
   }),
 
+  // Análisis fundamental / macro
+  fundamental: z.object({
+    macroBias: z.enum(["alcista", "bajista", "neutro", "mixto"]).describe("Sesgo macro/fundamental del activo."),
+    drivers: z.array(z.string()).describe("2-4 drivers macro clave que mueven este activo (tasas, DXY, datos económicos, geopolítica)."),
+    contextNote: z.string().describe("Cómo encaja el contexto macro (dado por el usuario o el general) con el sesgo técnico del chart."),
+    events: z.array(z.string()).describe("Eventos/datos de alto impacto a vigilar (NFP, CPI, decisión de banco central, etc.)."),
+    note: z.string().describe("Resumen fundamental en una frase corta."),
+  }),
+
   sessionTip: z.string().describe("Recordatorio de operar en aperturas de Londres o Nueva York."),
   fundamentalReminder: z
     .string()
@@ -221,6 +230,15 @@ export const dayTradingSchema = z.object({
     stopLoss: z.string(),
     takeProfit: z.string(),
     riskReward: z.string().describe("Ratio estimado, ej. '1:3'. En scalping se busca ~1:2 a 1:5."),
+  }),
+
+  // Análisis fundamental / macro
+  fundamental: z.object({
+    macroBias: z.enum(["alcista", "bajista", "neutro", "mixto"]).describe("Sesgo macro/fundamental del activo."),
+    drivers: z.array(z.string()).describe("2-4 drivers macro clave que mueven este activo (tasas, DXY, datos económicos, geopolítica)."),
+    contextNote: z.string().describe("Cómo encaja el contexto macro (dado por el usuario o el general) con el sesgo técnico y los lentes."),
+    events: z.array(z.string()).describe("Eventos/datos de alto impacto a vigilar (NFP, CPI, decisión de banco central, etc.)."),
+    note: z.string().describe("Resumen fundamental en una frase corta."),
   }),
 
   sessionTip: z.string().describe("Recordatorio de sesión/killzone para operar."),

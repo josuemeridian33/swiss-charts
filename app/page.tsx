@@ -157,8 +157,8 @@ export default function Home() {
           <div className="text-sm font-medium uppercase tracking-wider text-sage-muted">
             Pago único
           </div>
-          <div className="mt-2 text-5xl font-bold text-fg">$10</div>
-          <div className="mt-1 text-sm text-fg-muted">50 análisis · sin suscripción</div>
+          <div className="mt-2 text-5xl font-bold text-fg">$11.99</div>
+          <div className="mt-1 text-sm text-fg-muted">30 análisis · sin suscripción</div>
           <ul className="mt-4 space-y-1.5 text-left text-sm text-fg/90">
             <li>✓ Cada análisis incluye macro + micro</li>
             <li>✓ Descarga y comparte cada resultado</li>

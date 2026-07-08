@@ -9,6 +9,7 @@ import {
   LICENSE_COOKIE,
   licenseStatus,
   consumeLicense,
+  isAdmin,
 } from "@/lib/usage";
 
 export const runtime = "nodejs";
@@ -32,6 +33,7 @@ export async function POST(req: NextRequest) {
     const bias: string | undefined = body?.bias;
     const strategy: Strategy =
       body?.strategy === "daytrading" ? "daytrading" : "codigo_suizo";
+    const macroContext: string | undefined = body?.macroContext;
 
     if (typeof image !== "string" || !image.startsWith("data:image")) {
       return NextResponse.json({ error: "Imagen inválida." }, { status: 400 });
@@ -44,14 +46,18 @@ export async function POST(req: NextRequest) {
     }
 
     // ---------- Control de acceso ----------
+    const admin = isAdmin(req);
     const licenseCode = req.cookies.get(LICENSE_COOKIE)?.value;
     const freeUsed =
       parseInt(req.cookies.get(FREE_COOKIE)?.value ?? "0", 10) || 0;
 
-    let mode: "free" | "license" = "free";
+    let mode: "free" | "license" | "admin" = "free";
     let hasLicenseWithUses = false;
 
-    if (licenseCode) {
+    if (admin) {
+      mode = "admin";
+      hasLicenseWithUses = true;
+    } else if (licenseCode) {
       const status = await licenseStatus(licenseCode);
       if (status && status.remaining > 0) {
         mode = "license";
@@ -64,7 +70,7 @@ export async function POST(req: NextRequest) {
         {
           error: licenseCode
             ? "Tu licencia se agotó. Compra un paquete nuevo para seguir."
-            : "Usaste tus análisis gratis. Desbloquea 50 análisis para continuar.",
+            : "Usaste tus análisis gratis. Desbloquea 30 análisis para continuar.",
           code: "limit",
         },
         { status: 402 }
@@ -84,18 +90,20 @@ export async function POST(req: NextRequest) {
         {
           role: "user",
           content: [
-            { type: "text", text: USER_INSTRUCTION({ asset, timeframe, bias }, strategy) },
+            { type: "text", text: USER_INSTRUCTION({ asset, timeframe, bias, macro: macroContext }, strategy) },
             { type: "file", data: image, mediaType },
           ],
         },
       ],
     });
 
-    // ---------- Descontar uso (tras éxito) ----------
-    let remaining: number;
+    // ---------- Descontar uso (admin = ilimitado) ----------
+    let remaining: number | null = null;
     let newFree: number | null = null;
 
-    if (mode === "license" && licenseCode) {
+    if (mode === "admin") {
+      remaining = null;
+    } else if (mode === "license" && licenseCode) {
       remaining = await consumeLicense(licenseCode);
       if (remaining < 0) remaining = 0;
     } else {

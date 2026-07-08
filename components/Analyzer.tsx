@@ -143,6 +143,7 @@ export default function Analyzer() {
   const [microPreview, setMicroPreview] = useState<string | null>(null);
   const [asset, setAsset] = useState("");
   const [bias, setBias] = useState("");
+  const [macroContext, setMacroContext] = useState("");
   const [showOptions, setShowOptions] = useState(false);
 
   const [loading, setLoading] = useState(false);
@@ -193,6 +194,7 @@ export default function Analyzer() {
           micro: microPreview,
           asset,
           bias,
+          macroContext,
         }),
       });
       const data = await res.json();
@@ -250,21 +252,30 @@ export default function Analyzer() {
           onClick={() => setShowOptions((s) => !s)}
           className="text-xs text-sage-muted hover:text-sage-light"
         >
-          {showOptions ? "− Ocultar" : "+ Datos opcionales"} (activo, sesgo)
+          {showOptions ? "− Ocultar" : "+ Datos opcionales"} (activo, sesgo, macro)
         </button>
         {showOptions && (
-          <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            <input
-              value={asset}
-              onChange={(e) => setAsset(e.target.value)}
-              placeholder="Activo (ej. XAUUSD)"
-              className={INPUT_CLS}
-            />
-            <input
-              value={bias}
-              onChange={(e) => setBias(e.target.value)}
-              placeholder="Tu sesgo (opcional)"
-              className={INPUT_CLS}
+          <div className="mt-2 space-y-2">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <input
+                value={asset}
+                onChange={(e) => setAsset(e.target.value)}
+                placeholder="Activo (ej. XAUUSD)"
+                className={INPUT_CLS}
+              />
+              <input
+                value={bias}
+                onChange={(e) => setBias(e.target.value)}
+                placeholder="Tu sesgo (opcional)"
+                className={INPUT_CLS}
+              />
+            </div>
+            <textarea
+              value={macroContext}
+              onChange={(e) => setMacroContext(e.target.value)}
+              placeholder="Contexto macro/fundamental (opcional): tasas, DXY, datos próximos, noticias…"
+              rows={2}
+              className={`${INPUT_CLS} resize-none`}
             />
           </div>
         )}
@@ -372,7 +383,7 @@ function Paywall({
       >
         <div className="mb-4 text-center">
           <div className="text-3xl">🔓</div>
-          <h3 className="mt-2 text-xl font-bold text-fg">Desbloquea 50 análisis</h3>
+          <h3 className="mt-2 text-xl font-bold text-fg">Desbloquea 30 análisis</h3>
           <p className="mt-1 text-sm text-fg-muted">
             Usaste tus análisis gratis. Un solo pago, sin suscripción.
           </p>
@@ -400,8 +411,8 @@ function Paywall({
         {tab === "buy" ? (
           <div className="text-center">
             <div className="rounded-xl border border-sage-bright/30 bg-sage-bright/5 p-5">
-              <div className="text-4xl font-bold text-sage-light">$10</div>
-              <div className="mt-1 text-sm text-fg-muted">50 análisis · pago único</div>
+              <div className="text-4xl font-bold text-sage-light">$11.99</div>
+              <div className="mt-1 text-sm text-fg-muted">30 análisis · pago único</div>
             </div>
             <a
               href={HOTMART_URL}

@@ -3,6 +3,17 @@ import { getSupabaseAdmin } from "./supabase";
 export const FREE_LIMIT = 2;
 export const FREE_COOKIE = "sc_free";
 export const LICENSE_COOKIE = "sc_lic";
+export const ADMIN_COOKIE = "sc_admin";
+
+/** ¿La petición viene de un administrador (cookie sc_admin == ADMIN_TOKEN)? */
+export function isAdmin(req: {
+  cookies: { get(name: string): { value: string } | undefined };
+}): boolean {
+  const token = process.env.ADMIN_TOKEN;
+  if (!token) return false;
+  const c = req.cookies.get(ADMIN_COOKIE)?.value;
+  return !!c && c === token;
+}
 
 export function normalizeCode(code: string) {
   return code.trim().toUpperCase();

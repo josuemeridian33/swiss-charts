@@ -11,6 +11,7 @@ import {
   directionMeta,
   dtStructureMeta,
   fvgVariantMeta,
+  macroBiasMeta,
   orderBlockTypeMeta,
   sessionMeta,
 } from "@/lib/labels";
@@ -165,6 +166,33 @@ export default function DayTradingResult({
             <div className="mt-1.5 text-xs text-fg-muted">Momento: {a.scalping.momentum}</div>
             <div className="mt-1 text-xs text-fg-muted">{a.scalping.note}</div>
           </Card>
+        </div>
+
+        {/* Fundamental / Macro */}
+        <div className="mt-4 rounded-xl border border-terracotta/30 bg-terracotta/5 p-4">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-terracotta-soft">
+              Fundamental / Macro
+            </span>
+            <Badge tone={macroBiasMeta[a.fundamental.macroBias].tone}>
+              {macroBiasMeta[a.fundamental.macroBias].label}
+            </Badge>
+          </div>
+          {a.fundamental.drivers.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {a.fundamental.drivers.map((d) => (
+                <span key={d} className="rounded-md bg-surface-2 px-2 py-0.5 text-xs text-fg-muted">
+                  {d}
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="text-sm text-fg/90">{a.fundamental.contextNote}</p>
+          {a.fundamental.events.length > 0 && (
+            <div className="mt-2 text-xs text-fg-muted">
+              📅 Vigilar: {a.fundamental.events.join(" · ")}
+            </div>
+          )}
         </div>
 
         {/* Plan conjunto */}

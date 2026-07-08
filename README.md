@@ -7,7 +7,7 @@ zona de confluencia y plan de entrada.
 
 - **Framework:** Next.js 16 + React 19 + Tailwind v4
 - **IA:** Claude Sonnet 5 (visión) vía Vercel AI SDK (`generateObject`)
-- **Licencias/pagos:** Supabase + Hotmart (pago único $10 = 50 análisis)
+- **Licencias/pagos:** Supabase + Hotmart (pago único $11.99 = 30 análisis)
 - **Costo:** ~$0.02 por análisis, sin costos fijos mensuales
 
 ## Puesta en marcha (local)
@@ -23,10 +23,10 @@ por navegador). El sistema de licencias se activa al poner las variables de Supa
 
 1. **Supabase:** crea un proyecto y ejecuta `docs/supabase.sql` en el SQL Editor.
    Copia `SUPABASE_URL` y la `service_role key` al `.env.local`.
-2. **Hotmart:** crea el producto de $10. En *Herramientas → Webhook (Postback)*
+2. **Hotmart:** crea el producto de $11.99. En *Herramientas → Webhook (Postback)*
    apunta a `https://TU-DOMINIO/api/hotmart` y copia el `HOTTOK` a `HOTMART_HOTTOK`.
 3. Pon la URL de checkout en `NEXT_PUBLIC_HOTMART_URL`.
-4. Al comprar, Hotmart llama al webhook → se crea una licencia de 50 usos.
+4. Al comprar, Hotmart llama al webhook → se crea una licencia de 30 usos.
    El comprador la activa con su **código** o el **email de compra** en el muro de pago.
 
 ## Flujo de acceso

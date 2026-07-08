@@ -40,6 +40,14 @@ SECUENCIA DE ANÁLISIS (síguela en orden):
    - sessionTip: recuerda que las mejores entradas se buscan en las aperturas de Londres y Nueva York (funcionan como imán para que el precio llegue a la zona).
    - fundamentalReminder: recuerda revisar Forex Factory los datos económicos de alto impacto que afecten a este activo antes de operar. Tú NO tienes acceso a noticias en vivo, así que solo recuérdalo, no inventes datos económicos.
 
+11. FUNDAMENTAL / MACRO (objeto fundamental):
+   - macroBias: sesgo macro del activo (alcista/bajista/neutro/mixto).
+   - drivers: 2-4 drivers macro que mueven este activo (tasas de interés, DXY, inflación/CPI, empleo/NFP, geopolítica).
+   - contextNote: si el usuario dio contexto macro, intégralo y di si refuerza o contradice el sesgo técnico del chart. Si no dio contexto, da el enmarcado general del activo.
+   - events: eventos/datos de alto impacto a vigilar para este activo.
+   - note: resumen fundamental en una frase.
+   NO inventes cifras económicas concretas que el usuario no te haya dado; usa conocimiento general del activo.
+
 REGLAS DE FORMATO (IMPORTANTE):
 - Sé MUY CONCISO. Cada campo de texto debe ser una frase corta y directa (máximo ~20 palabras). Nada de párrafos, nada de relleno, nada de repetir lo obvio.
 - NO comentes sobre la calidad de la imagen ni te disculpes por lo que "no puedes confirmar". Si el usuario indicó activo/temporalidad, acéptalos tal cual sin objetar.
@@ -56,6 +64,7 @@ export const USER_INSTRUCTION = (
     asset?: string;
     timeframe?: string;
     bias?: string;
+    macro?: string;
   },
   strategy: Strategy = "codigo_suizo"
 ) => {
@@ -63,6 +72,8 @@ export const USER_INSTRUCTION = (
   if (extra?.asset) hints.push(`Activo indicado por el usuario: ${extra.asset}.`);
   if (extra?.timeframe) hints.push(`Temporalidad indicada: ${extra.timeframe}.`);
   if (extra?.bias) hints.push(`Sesgo/estrategia del usuario: ${extra.bias}.`);
+  if (extra?.macro)
+    hints.push(`Contexto macro/fundamental proporcionado por el usuario: ${extra.macro}.`);
   const intro =
     strategy === "daytrading"
       ? "Analiza esta captura de gráfico en modo Day Trading / Scalping leyendo los 3 lentes (SMC + ICT + Scalping) y devuelve el análisis estructurado."
@@ -114,6 +125,14 @@ SECUENCIA DE ANÁLISIS (síguela):
    - evitar: señales contradictorias o sin estructura.
 
 9. PLAN CONJUNTO: dirección, zona de entrada (la confluencia de los lentes), stop loss (más allá del OB/liquidez tomada), take profit con RR ~1:2 a 1:5.
+
+10. FUNDAMENTAL / MACRO (objeto fundamental):
+   - macroBias: sesgo macro del activo (alcista/bajista/neutro/mixto).
+   - drivers: 2-4 drivers macro que mueven este activo (tasas, DXY, inflación/CPI, empleo/NFP, geopolítica).
+   - contextNote: si el usuario dio contexto macro, intégralo y di si refuerza o contradice el sesgo técnico y los lentes. Si no dio contexto, da el enmarcado general.
+   - events: eventos/datos de alto impacto a vigilar para este activo.
+   - note: resumen fundamental en una frase.
+   NO inventes cifras económicas concretas que el usuario no te haya dado; usa conocimiento general del activo.
 
 REGLAS DE FORMATO (IMPORTANTE):
 - Sé MUY CONCISO. Cada campo de texto = una frase corta (máx ~20 palabras). Sin párrafos ni relleno.

@@ -9,6 +9,7 @@ import {
   LICENSE_COOKIE,
   licenseStatus,
   consumeLicense,
+  isAdmin,
 } from "@/lib/usage";
 
 export const runtime = "nodejs";
@@ -17,7 +18,7 @@ export const maxDuration = 120;
 
 const MAX_CHARS = 7_000_000; // ~5MB de imagen en base64
 
-type Hints = { asset?: string; bias?: string };
+type Hints = { asset?: string; bias?: string; macro?: string };
 
 /** Ejecuta un análisis individual (Código Suizo o Day Trading). */
 async function runAnalysis(
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
     const micro: unknown = body?.micro;
     const asset: string | undefined = body?.asset;
     const bias: string | undefined = body?.bias;
+    const macroContext: string | undefined = body?.macroContext;
 
     if (typeof macro !== "string" || !macro.startsWith("data:image")) {
       return NextResponse.json(
@@ -83,14 +85,18 @@ export async function POST(req: NextRequest) {
     }
 
     // ---------- Control de acceso ----------
+    const admin = isAdmin(req);
     const licenseCode = req.cookies.get(LICENSE_COOKIE)?.value;
     const freeUsed =
       parseInt(req.cookies.get(FREE_COOKIE)?.value ?? "0", 10) || 0;
 
-    let mode: "free" | "license" = "free";
+    let mode: "free" | "license" | "admin" = "free";
     let hasUses = false;
 
-    if (licenseCode) {
+    if (admin) {
+      mode = "admin";
+      hasUses = true;
+    } else if (licenseCode) {
       const status = await licenseStatus(licenseCode);
       if (status && status.remaining > 0) {
         mode = "license";
@@ -103,7 +109,7 @@ export async function POST(req: NextRequest) {
         {
           error: licenseCode
             ? "Tu licencia se agotó. Compra un paquete nuevo para seguir."
-            : "Usaste tus análisis gratis. Desbloquea 50 análisis para continuar.",
+            : "Usaste tus análisis gratis. Desbloquea 30 análisis para continuar.",
           code: "limit",
         },
         { status: 402 }
@@ -111,17 +117,19 @@ export async function POST(req: NextRequest) {
     }
 
     // ---------- Ambos análisis en paralelo ----------
-    const hints: Hints = { asset, bias };
+    const hints: Hints = { asset, bias, macro: macroContext };
     const [suizo, daytrading] = await Promise.all([
       runAnalysis(macro, "codigo_suizo", hints),
       runAnalysis(micro, "daytrading", hints),
     ]);
 
-    // ---------- Descontar 1 uso (el dual cuenta como 1) ----------
-    let remaining: number;
+    // ---------- Descontar uso (admin = ilimitado, dual = 1 uso) ----------
+    let remaining: number | null = null;
     let newFree: number | null = null;
 
-    if (mode === "license" && licenseCode) {
+    if (mode === "admin") {
+      remaining = null; // acceso ilimitado
+    } else if (mode === "license" && licenseCode) {
       remaining = await consumeLicense(licenseCode);
       if (remaining < 0) remaining = 0;
     } else {

@@ -120,3 +120,13 @@ export const fvgVariantMeta: Record<
   displacement_runaway: { label: "Displacement / Runaway", tone: "buy" },
   exhaustion: { label: "Exhaustion FVG", tone: "warn" },
 };
+
+export const macroBiasMeta: Record<
+  Analysis["fundamental"]["macroBias"],
+  { label: string; tone: Tone }
+> = {
+  alcista: { label: "Macro alcista", tone: "buy" },
+  bajista: { label: "Macro bajista", tone: "sell" },
+  neutro: { label: "Macro neutra", tone: "muted" },
+  mixto: { label: "Macro mixta", tone: "warn" },
+};
