@@ -2,7 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Analysis } from "@/lib/schema";
-import AnalysisResult from "./AnalysisResult";
+import dynamic from "next/dynamic";
+
+// Carga diferida del resultado: saca html-to-image (lib pesada) del JS inicial.
+// El panel de resultado solo se monta tras analizar, así no penaliza la primera carga.
+const AnalysisResult = dynamic(() => import("./AnalysisResult"), {
+  ssr: false,
+  loading: () => <div className="mt-6 h-44 animate-pulse rounded-xl bg-surface/60" />,
+});
 
 const HOTMART_URL = process.env.NEXT_PUBLIC_HOTMART_URL || "#";
 
@@ -146,8 +153,12 @@ export default function Analyzer() {
           <div className="py-8">
             <div className="text-4xl">📸</div>
             <p className="mt-3 font-medium text-fg">
-              Arrastra tu gráfico, haz clic o pega con{" "}
-              <kbd className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-xs">Ctrl+V</kbd>
+              Arrastra tu gráfico o haz clic
+              <span className="hidden sm:inline">
+                {" "}
+                o pega con{" "}
+                <kbd className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-xs">Ctrl+V</kbd>
+              </span>
             </p>
             <p className="mt-1 text-sm text-fg-muted">
               Captura de tu gráfico en temporalidad alta (diaria, semanal, mensual)
@@ -283,9 +294,9 @@ function Paywall({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 py-8 sm:items-center sm:py-4" onClick={onClose}>
       <div
-        className="w-full max-w-md rounded-2xl border border-line bg-ink p-6"
+        className="w-full max-w-md rounded-2xl border border-line bg-ink p-5 sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 text-center">
