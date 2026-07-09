@@ -1,140 +1,99 @@
-import Analyzer from "@/components/Analyzer";
+import Link from "next/link";
 
-const VIEWS = [
+const HOTMART_URL = process.env.NEXT_PUBLIC_HOTMART_URL || "/analizador";
+
+const BENEFITS = [
   {
-    tag: "Macro · Código Suizo",
-    title: "El panorama grande",
-    accent: "text-sage-bright",
-    desc: "Diaria, semanal y mensual. Zonas de altísima probabilidad donde coinciden varios factores, para entrar con stop corto y beneficio grande.",
-    checks: [
-      "Estructura y rompimiento (BOS)",
-      "Order block de origen",
-      "50% de la vela de rompimiento",
-      "Fibonacci 78.6%",
-      "Imbalance / FVG",
-      "Zona de confluencia",
-    ],
+    icon: "📈",
+    t: "Macro + Micro a la vez",
+    d: "Subes tu chart en temporalidad alta y baja. Dos análisis en paralelo: Código Suizo + SMC/ICT.",
   },
   {
-    tag: "Micro · Day Trading",
-    title: "La entrada precisa",
-    accent: "text-terracotta-soft",
-    desc: "Intradía y scalping. Leemos tu gráfico con 3 lentes y te damos un % en cada uno, más un plan conjunto para operar en la sesión.",
-    checks: [
-      "SMC: order blocks y liquidez",
-      "ICT: FVG y sus variantes",
-      "Liquidity sweeps / grabs",
-      "Premium / descuento (dealing range)",
-      "Killzones (Londres / Nueva York)",
-      "Gatillo de scalping en 1m / 5m",
-    ],
+    icon: "🎯",
+    t: "3 metodologías con %",
+    d: "Cada análisis te da un score en SMC, ICT y Scalping, más veredicto y plan de entrada.",
+  },
+  {
+    icon: "📊",
+    t: "Con análisis fundamental",
+    d: "Pegas el contexto macro (tasas, DXY, noticias) y la IA lo cruza con tu sesgo técnico.",
   },
 ];
 
 const STEPS = [
-  {
-    n: "1",
-    t: "Sube macro + micro",
-    d: "Sube la captura de tu chart en temporalidad alta y en temporalidad baja.",
-  },
-  {
-    n: "2",
-    t: "La IA lee ambos",
-    d: "Código Suizo sobre el macro y SMC + ICT sobre el micro, en paralelo.",
-  },
-  {
-    n: "3",
-    t: "Recibe tus 2 planes",
-    d: "Veredicto, zonas, entrada, stop y take profit para cada vista.",
-  },
+  { n: "1", t: "Sube tus 2 charts", d: "Una captura macro y una micro del activo que operes." },
+  { n: "2", t: "La IA los analiza", d: "Código Suizo + SMC + ICT + fundamental, en segundos." },
+  { n: "3", t: "Opera tu plan", d: "Entrada, stop, take profit y qué hacer ahora." },
+];
+
+const FAQ = [
+  { q: "¿Necesito crear una cuenta?", a: "No. Compras y entras con tu email de compra. Sin contraseñas." },
+  { q: "¿Caduca el acceso?", a: "No. Pagas $11.99 una vez y tienes 30 análisis. Sin mensualidad." },
+  { q: "¿Qué activos analiza?", a: "Oro, Bitcoin, NASDAQ, US30, forex y cualquier chart de trading." },
 ];
 
 export default function Home() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:py-14">
-      {/* Hero */}
+    <main className="mx-auto w-full max-w-3xl px-4 py-12 sm:py-20">
+      {/* Hero + Oferta */}
       <header className="text-center">
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-line-strong bg-surface/60 px-3 py-1 text-xs text-sage-muted">
+        <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-line-strong bg-surface/60 px-3 py-1 text-xs text-sage-muted">
           <span className="h-1.5 w-1.5 rounded-full bg-terracotta" />
-          Análisis con IA · SMC · ICT · Código Suizo
+          Análisis de gráficos con IA · SMC · ICT · Código Suizo
         </div>
-        <h1 className="text-3xl font-bold leading-tight text-fg sm:text-4xl">
-          Tu gráfico, leído como{" "}
-          <span className="text-sage-bright">un profesional</span>
+        <h1 className="text-4xl font-bold leading-tight text-fg sm:text-5xl">
+          Analiza tu gráfico como <span className="text-sage-bright">un profesional</span>
         </h1>
-        <p className="mx-auto mt-3 max-w-xl text-fg-muted">
-          Sube tu chart en <span className="text-fg">macro y en micro</span> y
-          recibe en segundos <span className="text-fg">dos análisis a la vez</span>:
-          Código Suizo para el panorama grande y SMC + ICT para la entrada.
-          Sin conectar tu cuenta.
+        <p className="mx-auto mt-4 max-w-xl text-fg-muted">
+          Sube tu chart en macro y micro y recibe en segundos estructura, zonas,
+          plan de entrada y análisis fundamental. Como lo haría un trader experto.
         </p>
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-fg-muted">
-          <span>✓ Macro + micro en paralelo</span>
-          <span>✓ Oro, BTC, NASDAQ, US30, forex</span>
-          <span>✓ % por metodología</span>
+
+        {/* Oferta */}
+        <div className="mx-auto mt-8 max-w-md rounded-2xl border border-sage-bright/30 bg-gradient-to-b from-sage-bright/10 to-transparent p-5">
+          <div className="flex items-end justify-center gap-2">
+            <span className="text-5xl font-bold text-fg">$11.99</span>
+            <span className="mb-1.5 text-sm text-fg-muted">una vez · 30 análisis</span>
+          </div>
+          <div className="mt-1 text-xs text-fg-muted">
+            macro + micro · sin suscripción · sin tarjeta guardada
+          </div>
+
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+            <Link
+              href="/analizador"
+              className="rounded-xl bg-sage-bright px-6 py-3 text-base font-semibold text-ink-deep transition hover:bg-sage-light"
+            >
+              Probar gratis →
+            </Link>
+            <a
+              href={HOTMART_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-xl border border-line bg-surface/60 px-6 py-3 text-base font-semibold text-fg transition hover:border-sage/60"
+            >
+              Comprar $11.99
+            </a>
+          </div>
+          <p className="mt-3 text-xs text-fg-muted">Prueba 2 análisis gratis antes de comprar.</p>
         </div>
       </header>
 
-      {/* Analizador */}
-      <section className="mt-10">
-        <Analyzer />
-      </section>
-
-      {/* Las dos vistas (siempre se analizan ambas) */}
-      <section className="mt-14">
-        <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-sage-muted">
-          Cada análisis incluye las dos vistas
-        </h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {VIEWS.map((m) => (
-            <div
-              key={m.tag}
-              className="rounded-xl border border-line bg-surface/50 p-5"
-            >
-              <div className="text-xs font-medium uppercase tracking-wider text-sage-muted">
-                {m.tag}
-              </div>
-              <div className={`mt-1 text-lg font-bold ${m.accent}`}>{m.title}</div>
-              <p className="mt-2 text-sm text-fg-muted">{m.desc}</p>
-              <ul className="mt-3 space-y-1.5">
-                {m.checks.map((c) => (
-                  <li key={c} className="flex items-start gap-2 text-sm text-fg/90">
-                    <span className={`mt-0.5 ${m.accent}`}>✓</span>
-                    <span>{c}</span>
-                  </li>
-                ))}
-              </ul>
+      {/* Beneficios */}
+      <section className="mt-16">
+        <div className="grid gap-3 sm:grid-cols-3">
+          {BENEFITS.map((b) => (
+            <div key={b.t} className="rounded-xl border border-line bg-surface/50 p-5">
+              <div className="text-2xl">{b.icon}</div>
+              <div className="mt-2 font-semibold text-fg">{b.t}</div>
+              <p className="mt-1 text-sm text-fg-muted">{b.d}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Instructivo: ¿qué es El Código Suizo? */}
-      <section className="mt-8">
-        <div className="rounded-2xl border border-sage-bright/25 bg-gradient-to-b from-sage-bright/8 to-transparent p-5 sm:p-6">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-sage-bright">
-            ¿Qué es El Código Suizo?
-          </h2>
-          <p className="mt-2 text-sm text-fg/90">
-            Es una metodología de precisión para{" "}
-            <span className="text-fg">temporalidades altas</span> (diaria,
-            semanal, mensual). La idea es operar poco y solo donde varios
-            factores coinciden en una misma zona: el order block que originó el
-            movimiento, el 50% de la vela de rompimiento, el Fibonacci 78.6% y el
-            imbalance. Cuando 2 o 3 coinciden, es una{" "}
-            <span className="text-sage-light">zona de alta probabilidad</span>.
-          </p>
-          <p className="mt-2 text-sm text-fg-muted">
-            Por eso cada análisis trae ambas vistas: Código Suizo te muestra el{" "}
-            <span className="text-fg">panorama grande</span> y Day Trading/Scalping
-            (SMC + ICT) te da la{" "}
-            <span className="text-fg">entrada precisa</span> en temporalidad baja.
-          </p>
-        </div>
-      </section>
-
       {/* Cómo funciona */}
-      <section className="mt-14">
+      <section className="mt-16">
         <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-sage-muted">
           Cómo funciona
         </h2>
@@ -151,32 +110,32 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Precio */}
-      <section className="mt-14">
-        <div className="mx-auto max-w-sm rounded-2xl border border-sage-bright/30 bg-gradient-to-b from-sage-bright/10 to-transparent p-6 text-center">
-          <div className="text-sm font-medium uppercase tracking-wider text-sage-muted">
-            Pago único
-          </div>
-          <div className="mt-2 text-5xl font-bold text-fg">$11.99</div>
-          <div className="mt-1 text-sm text-fg-muted">30 análisis · sin suscripción</div>
-          <ul className="mt-4 space-y-1.5 text-left text-sm text-fg/90">
-            <li>✓ Cada análisis incluye macro + micro</li>
-            <li>✓ Descarga y comparte cada resultado</li>
-            <li>✓ Sin mensualidad, sin tarjeta guardada</li>
-          </ul>
-          <p className="mt-4 text-xs text-fg-muted">
-            Empieza con 2 análisis gratis arriba ↑
-          </p>
+      {/* FAQ */}
+      <section className="mt-16">
+        <div className="space-y-3">
+          {FAQ.map((f) => (
+            <div key={f.q} className="rounded-xl border border-line bg-surface/50 p-4">
+              <div className="font-medium text-fg">{f.q}</div>
+              <p className="mt-1 text-sm text-fg-muted">{f.a}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="mt-14 border-t border-line pt-6 text-center text-xs text-fg-muted">
-        <p>
-          Swiss Charts es una herramienta educativa de análisis técnico. No es
-          asesoría financiera ni garantiza resultados. Opera bajo tu propio riesgo.
-        </p>
-        <p className="mt-2">🇨🇭 Swiss Charts · SMC · ICT · Código Suizo</p>
+      {/* CTA final */}
+      <section className="mt-16 text-center">
+        <h2 className="text-2xl font-bold text-fg">Empieza ahora</h2>
+        <p className="mt-2 text-sm text-fg-muted">2 análisis gratis. Sin tarjeta.</p>
+        <Link
+          href="/analizador"
+          className="mt-4 inline-block rounded-xl bg-sage-bright px-6 py-3 text-base font-semibold text-ink-deep transition hover:bg-sage-light"
+        >
+          Probar Swiss Charts →
+        </Link>
+      </section>
+
+      <footer className="mt-16 border-t border-line pt-6 text-center text-xs text-fg-muted">
+        <p>🇨🇭 Swiss Charts · Herramienta educativa de análisis técnico. No es asesoría financiera.</p>
       </footer>
     </main>
   );
