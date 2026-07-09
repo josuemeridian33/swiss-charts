@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
       model: anthropic("claude-sonnet-5"),
       schema: strategy === "daytrading" ? dayTradingSchema : analysisSchema,
       maxOutputTokens: 8000,
+      temperature: 0, // determinista: misma imagen → mismo análisis
       system: getStrategySystem(strategy),
       messages: [
         {
