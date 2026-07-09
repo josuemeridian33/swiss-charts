@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateObject } from "ai";
+import { streamObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { analysisSchema, dayTradingSchema, type Strategy } from "@/lib/schema";
 import { getStrategySystem, USER_INSTRUCTION } from "@/lib/prompt";
@@ -13,21 +13,17 @@ import {
 } from "@/lib/usage";
 
 export const runtime = "nodejs";
-// Dos análisis de visión en paralelo: damos margen para que no corte Vercel.
+// Dos análisis de visión en paralelo + streaming: margen amplio.
 export const maxDuration = 120;
 
 const MAX_CHARS = 7_000_000; // ~5MB de imagen en base64
 
 type Hints = { asset?: string; bias?: string; macro?: string };
 
-/** Ejecuta un análisis individual (Código Suizo o Day Trading). */
-async function runAnalysis(
-  image: string,
-  strategy: Strategy,
-  hints: Hints
-) {
+/** Inicia un análisis individual en streaming (Código Suizo o Day Trading). */
+function runStream(image: string, strategy: Strategy, hints: Hints) {
   const mediaType = image.slice(5, image.indexOf(";")) || "image/jpeg";
-  const { object } = await generateObject({
+  return streamObject({
     model: anthropic("claude-sonnet-5"),
     schema: strategy === "daytrading" ? dayTradingSchema : analysisSchema,
     maxOutputTokens: 8000,
@@ -42,11 +38,11 @@ async function runAnalysis(
       },
     ],
   });
-  return object;
 }
 
 /**
- * Análisis DUAL: macro (Código Suizo) + micro (Day Trading) en paralelo.
+ * Análisis DUAL en STREAMING: macro (Código Suizo) + micro (Day Trading) en
+ * paralelo, emitidos como Server-Sent Events a medida que se generan.
  * Cuenta como 1 solo uso.
  */
 export async function POST(req: NextRequest) {
@@ -116,37 +112,71 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ---------- Ambos análisis en paralelo ----------
-    const hints: Hints = { asset, bias, macro: macroContext };
-    const [suizo, daytrading] = await Promise.all([
-      runAnalysis(macro, "codigo_suizo", hints),
-      runAnalysis(micro, "daytrading", hints),
-    ]);
-
-    // ---------- Descontar uso (admin = ilimitado, dual = 1 uso) ----------
+    // ---------- Consumo (antes de emitir el stream) ----------
     let remaining: number | null = null;
-    let newFree: number | null = null;
+    let cookieHeader: string | null = null;
 
     if (mode === "admin") {
-      remaining = null; // acceso ilimitado
+      remaining = null;
     } else if (mode === "license" && licenseCode) {
       remaining = await consumeLicense(licenseCode);
       if (remaining < 0) remaining = 0;
     } else {
-      newFree = freeUsed + 1;
+      const newFree = freeUsed + 1;
       remaining = Math.max(0, FREE_LIMIT - newFree);
+      cookieHeader = `${FREE_COOKIE}=${newFree}; Path=/; Max-Age=${60 * 60 * 24 * 365}; HttpOnly; SameSite=Lax`;
     }
 
-    const response = NextResponse.json({ suizo, daytrading, mode, remaining });
-    if (newFree !== null) {
-      response.cookies.set(FREE_COOKIE, String(newFree), {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 365,
-      });
-    }
-    return response;
+    // ---------- Streaming de ambos análisis ----------
+    const hints: Hints = { asset, bias, macro: macroContext };
+    const macroStream = runStream(macro, "codigo_suizo", hints);
+    const microStream = runStream(micro, "daytrading", hints);
+
+    const enc = new TextEncoder();
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        const emit = (o: unknown) => {
+          try {
+            controller.enqueue(enc.encode(`data: ${JSON.stringify(o)}\n\n`));
+          } catch {
+            /* controlador cerrado */
+          }
+        };
+        emit({ type: "meta", remaining, mode });
+
+        const run = async (
+          s: ReturnType<typeof runStream>,
+          tag: "suizo" | "daytrading"
+        ) => {
+          let last: unknown = null;
+          try {
+            for await (const part of s.partialObjectStream) {
+              last = part;
+              emit({ type: tag, data: part });
+            }
+            emit({ type: `${tag}-done`, data: last });
+          } catch {
+            emit({ type: "error", tag });
+          }
+        };
+
+        await Promise.all([
+          run(macroStream, "suizo"),
+          run(microStream, "daytrading"),
+        ]);
+        emit({ type: "done" });
+        controller.close();
+      },
+    });
+
+    const headers: Record<string, string> = {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+    };
+    if (cookieHeader) headers["Set-Cookie"] = cookieHeader;
+
+    return new Response(stream, { headers });
   } catch (err) {
     console.error("[analyze-both]", err);
     return NextResponse.json(

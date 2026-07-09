@@ -17,8 +17,13 @@ const DayTradingResult = dynamic(() => import("./DayTradingResult"), {
 const HOTMART_URL = process.env.NEXT_PUBLIC_HOTMART_URL || "#";
 const INPUT_CLS =
   "rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-muted focus:border-sage-bright focus:outline-none";
+const LAST_RESULT_KEY = "sc_last_result";
 
 type Slot = "macro" | "micro";
+type DualResult = {
+  suizo: Analysis | null;
+  daytrading: DayTradingAnalysis | null;
+};
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -147,10 +152,8 @@ export default function Analyzer() {
   const [showOptions, setShowOptions] = useState(false);
 
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{
-    suizo: Analysis;
-    daytrading: DayTradingAnalysis;
-  } | null>(null);
+  const [phase, setPhase] = useState("");
+  const [result, setResult] = useState<DualResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [paywall, setPaywall] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
@@ -180,11 +183,31 @@ export default function Analyzer() {
     return () => window.removeEventListener("paste", onPaste);
   }, [handleFile, macroPreview]);
 
+  // Persistir / restaurar el último análisis (sobrevive al reload).
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(LAST_RESULT_KEY);
+      if (saved) setResult(JSON.parse(saved));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  useEffect(() => {
+    try {
+      if (result?.suizo || result?.daytrading)
+        localStorage.setItem(LAST_RESULT_KEY, JSON.stringify(result));
+      else localStorage.removeItem(LAST_RESULT_KEY);
+    } catch {
+      /* ignore */
+    }
+  }, [result]);
+
   async function analyze() {
     if (!macroPreview || !microPreview) return;
     setLoading(true);
     setError(null);
-    setResult(null);
+    setPhase("Iniciando análisis…");
+    setResult({ suizo: null, daytrading: null });
     try {
       const res = await fetch("/api/analyze-both", {
         method: "POST",
@@ -197,21 +220,69 @@ export default function Analyzer() {
           macroContext,
         }),
       });
-      const data = await res.json();
       if (!res.ok) {
-        if (data.code === "limit") {
-          setPaywall(true);
-        } else {
-          setError(data.error || "Error al analizar.");
-        }
+        const data = await res.json().catch(() => ({}));
+        if (data.code === "limit") setPaywall(true);
+        else setError(data.error || "Error al analizar.");
         return;
       }
-      setResult({ suizo: data.suizo, daytrading: data.daytrading });
-      setRemaining(typeof data.remaining === "number" ? data.remaining : null);
+
+      const reader = res.body?.getReader();
+      if (!reader) {
+        setError("Error de conexión.");
+        return;
+      }
+      const dec = new TextDecoder();
+      let buf = "";
+      let suizoReady = false;
+      let dtReady = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const events = buf.split("\n\n");
+        buf = events.pop() || "";
+        for (const ev of events) {
+          const line = ev.trim();
+          if (!line.startsWith("data: ")) continue;
+          let evt: { type: string; data?: unknown; remaining?: number | null };
+          try {
+            evt = JSON.parse(line.slice(6));
+          } catch {
+            continue;
+          }
+          switch (evt.type) {
+            case "meta":
+              setRemaining(typeof evt.remaining === "number" ? evt.remaining : null);
+              break;
+            case "suizo":
+              if (!suizoReady) setPhase("Leyendo macro · Código Suizo…");
+              break;
+            case "daytrading":
+              if (!dtReady) setPhase("Leyendo micro · SMC · ICT · Scalping…");
+              break;
+            case "suizo-done":
+              suizoReady = true;
+              setResult((r) => ({ suizo: evt.data as Analysis, daytrading: r?.daytrading ?? null }));
+              setPhase(dtReady ? "" : "Macro listo · terminando micro…");
+              break;
+            case "daytrading-done":
+              dtReady = true;
+              setResult((r) => ({ suizo: r?.suizo ?? null, daytrading: evt.data as DayTradingAnalysis }));
+              setPhase(suizoReady ? "" : "Micro listo · terminando macro…");
+              break;
+            case "error":
+              setError("No se pudo completar uno de los análisis. Intenta de nuevo.");
+              break;
+          }
+        }
+      }
     } catch {
       setError("Error de conexión. Intenta de nuevo.");
     } finally {
       setLoading(false);
+      setPhase("");
     }
   }
 
@@ -220,7 +291,7 @@ export default function Analyzer() {
       <p className="mb-2 text-xs text-fg-muted">
         Sube tu gráfico en <span className="text-sage-bright">macro</span> y en{" "}
         <span className="text-terracotta-soft">micro</span>. Se analizan los dos a la vez
-        (Código Suizo + SMC/ICT).
+        (Código Suizo + SMC/ICT) y van apareciendo en vivo.
         <span className="hidden sm:inline"> Puedes pegar con Ctrl+V.</span>
       </p>
 
@@ -287,7 +358,7 @@ export default function Analyzer() {
         disabled={!macroPreview || !microPreview || loading}
         className="mt-4 w-full rounded-xl bg-sage-bright px-6 py-3.5 text-base font-semibold text-ink-deep transition hover:bg-sage-light disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {loading ? "Analizando macro y micro…" : "Analizar ambos gráficos"}
+        {loading ? "Analizando…" : "Analizar ambos gráficos"}
       </button>
 
       {remaining !== null && (
@@ -302,27 +373,34 @@ export default function Analyzer() {
         </div>
       )}
 
-      {loading && (
-        <div className="mt-6 animate-pulse space-y-3">
-          <div className="h-24 rounded-xl bg-surface/60" />
-          <div className="h-24 rounded-xl bg-surface/60" />
-        </div>
-      )}
-
-      {result && !loading && (
+      {/* Resultados (aparecen en vivo a medida que termina cada uno) */}
+      {(result?.suizo || result?.daytrading || loading) && (
         <div className="mt-6 space-y-8">
-          <div>
-            <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-sage-muted">
-              📈 Código Suizo · macro
+          {result?.suizo ? (
+            <div>
+              <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-sage-muted">
+                📈 Código Suizo · macro
+              </div>
+              <AnalysisResult analysis={result.suizo} />
             </div>
-            <AnalysisResult analysis={result.suizo} />
-          </div>
-          <div>
-            <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-sage-muted">
-              🔬 Day Trading / Scalping · micro
+          ) : loading ? (
+            <div className="animate-pulse rounded-xl border border-line bg-surface/40 p-4 text-sm text-fg-muted">
+              {phase || "Leyendo macro…"}
             </div>
-            <DayTradingResult analysis={result.daytrading} />
-          </div>
+          ) : null}
+
+          {result?.daytrading ? (
+            <div>
+              <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-sage-muted">
+                🔬 Day Trading / Scalping · micro
+              </div>
+              <DayTradingResult analysis={result.daytrading} />
+            </div>
+          ) : loading ? (
+            <div className="animate-pulse rounded-xl border border-line bg-surface/40 p-4 text-sm text-fg-muted">
+              {phase || "Leyendo micro…"}
+            </div>
+          ) : null}
         </div>
       )}
 

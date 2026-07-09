@@ -31,9 +31,13 @@ export default function DayTradingResult({
     if (!ref.current) return;
     setDownloading(true);
     try {
-      const dataUrl = await toPng(ref.current, {
-        pixelRatio: 2,
+      const node = ref.current;
+      // pixelRatio dinámico: si no, el navegador corta los resultados altos.
+      const pixelRatio = Math.min(2, Math.max(1, 6000 / (node.scrollHeight || 1)));
+      const dataUrl = await toPng(node, {
+        pixelRatio,
         backgroundColor: "#0d0f0f",
+        cacheBust: true,
       });
       const link = document.createElement("a");
       link.download = `swiss-charts-dt-${a.asset.replace(/\s+/g, "")}.png`;
