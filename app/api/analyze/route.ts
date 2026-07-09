@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     const { object } = await generateObject({
       model: anthropic("claude-sonnet-5"),
       schema: strategy === "daytrading" ? dayTradingSchema : analysisSchema,
-      maxOutputTokens: 4000,
+      maxOutputTokens: 8000,
       system: getStrategySystem(strategy),
       messages: [
         {
