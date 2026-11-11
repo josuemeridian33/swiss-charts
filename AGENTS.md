@@ -25,5 +25,19 @@ ops-telegram estado <task_id> [--esperar]                            # releer la
   se queda esperando: sale 0 aprobada, 2 rechazada (el motivo queda como feedback), 3 vencida.
   Rechazado = no se hace; aprobado = sí se hace el trabajo y se actualiza el repo.
 - No poner "prueba" ni "test" en el tema: el gate descarta esas tarjetas.
-- Solo funciona en esta Mac (lee `~/Code/ops/.env`); en la nube no hay Telegram.
+- `ops-telegram` solo existe en la Mac del dueño (lee `~/Code/ops/.env`).
+- **En la nube** (sesión web, el comando no existe): no buscar el repo `ops` ni pedir el
+  token por el chat. Si el entorno trae `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID`, mandar
+  directo (archivos de hasta 50 MB):
+
+  ```bash
+  curl -sS "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+    -d chat_id="$TELEGRAM_CHAT_ID" --data-urlencode text="📬 <repo>: texto corto"
+  curl -sS "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument" \
+    -F chat_id="$TELEGRAM_CHAT_ID" -F document=@pieza.mp4 -F caption="📬 <repo>: qué revisar"
+  ```
+
+  En la nube no hay `aprobar` (los botones dependen del gate de la Mac): mandar la pieza y
+  pedir la decisión en la conversación. Si faltan las variables, decirlo en una línea y
+  dejar la pieza subida en la rama; no insistir.
 <!-- telegram-ops:fin -->
